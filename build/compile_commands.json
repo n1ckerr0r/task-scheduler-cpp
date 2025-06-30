@@ -1,0 +1,8 @@
+[
+{
+  "directory": "/home/err0r_n1ck/temp/labwork9-n1ckerr0r/build/bin",
+  "command": "/usr/bin/g++  -I/home/err0r_n1ck/temp/labwork9-n1ckerr0r/lib -I/home/err0r_n1ck/temp/labwork9-n1ckerr0r -g -std=gnu++23 -o CMakeFiles/labwork9.dir/main.cpp.o -c /home/err0r_n1ck/temp/labwork9-n1ckerr0r/bin/main.cpp",
+  "file": "/home/err0r_n1ck/temp/labwork9-n1ckerr0r/bin/main.cpp",
+  "output": "bin/CMakeFiles/labwork9.dir/main.cpp.o"
+}
+]
