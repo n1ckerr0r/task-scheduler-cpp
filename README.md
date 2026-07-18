@@ -1,99 +1,270 @@
-# Лабораторная работа 9
+# Task Scheduler C++
 
-Шедулер задач
+Header-only C++23 library for building and executing small dependency graphs of tasks.
 
-## Задача
+The library lets you:
+- add tasks with zero, one, or two arguments;
+- reference one task result from another task;
+- compute only the subgraph that is actually needed;
+- execute the whole graph on demand;
+- cache completed results;
+- validate task ids at runtime.
 
-Вашей задачей будет разработать класс отвечающий за выполнение связанных по данным между собой задач.
-Часто, чтобы решить какую либо задачу, требуется выполнить граф вычислений, где узел графа это задача, ребро связь между результатом выполнения одной задачи и параметром для запуска другой. Вам предстоит разработать класс **TTaskScheduler** , решающий подобную задачу.
+The main public type is `task_scheduler::Scheduler` from `task_scheduler/scheduler.hpp`.
 
-Пример такой задачи - нахождение корней квадратного уравнения (предполагаем что коэффициенты гарантирует что корня 2). Решение подобной задачи в лоб - подразумевает вычисление корня из дискриминанта дважды.  Очевидно, что это не оптимально.
+## Public headers
 
-
-Вот так мог бы выглядеть код для решение данной задачи с помощью TTaskScheduler
+Preferred public includes:
 
 ```cpp
-struct AddNumber {
-  float add(float a) const {
-    return a + number;
-  }
-
-  float number;
-};
-
-float a = 1;
-float b = -2;
-float c = 0;
-AddNumber add{
-  .number = 3
-};
-
-TTaskScheduler scheduler;
-
-auto id1 = scheduler.add([](float a, float c) {return -4 * a * c;}, a, c);
-
-auto id2 = scheduler.add([](float b, float v) {return b * b + v;}, b, scheduler.getFutureResult<float>(id1));
-
-auto id3 = scheduler.add([](float b, float d) {return -b + std::sqrt(d);}, b, scheduler.getFutureResult<float>(id2));
-
-auto id4 = scheduler.add([](float b, float d) {return -b - std::sqrt(d);}, b, scheduler.getFutureResult<float>(id2));
-
-auto id5 = scheduler.add([](float a, float v) {return v/(2*a);}, a, scheduler.getFutureResult<float>(id3));
-
-auto id6 = scheduler.add([]{float a, float v} {return v/(2*a);}, a, scheduler.getFutureResult<float>(id4));
-
-auto id7 = scheduler.add(&AddNumber::add, add, scheduler.getFutureResult<float>(id6));
-
-scheduler.executeAll();
-
-std::cout << "x1 = " << scheduler.getResult<float>(id5) << std::endl;
-std::cout << "x2 = " << scheduler.getResult<float>(id6) << std::endl;
-std::cout << "x3 = " << scheduler.getResult<float>(id7) << std::endl;
+#include <task_scheduler/scheduler.hpp>
+#include <task_scheduler/any.hpp>
 ```
 
-Где getFutureResult это результат выполнения задачи в будущем,
+## Why `Any` exists here
 
-### Публичный интефейс TTaskScheduler
+Different tasks may return different result types:
+- one task returns `int`;
+- another returns `float`;
+- another returns a user-defined type.
 
- - **add** - принимает в качестве аргумента задание для него. Возвращает объект описывающий добавленную таску.
- - **getFutureResult<T>** - возвращает объект, из которого в будущем можно получить результат задания, переданного в качестве результата типа Т
- - **getResult<T>** - возвращает результат выполнения задания определенного типа. Вычисляет его если оно еще не подсчитано, при это не происходит вычисления не нужных заданий
- - **executeAll** - выполняет все запланированные задания
+The scheduler stores all tasks in one container, so it also needs one common way to store all task results. `task_scheduler::Any` solves exactly that problem: it erases the concrete result type while the task is stored, then restores the expected type when `getResult<T>()` is called.
 
-### Требования и ограничения к заданиям
+## Project layout
 
-  - [Callable object](https://en.cppreference.com/w/cpp/named_req/Callable)
-  - Количество аргументов не больше 2
-  - Задание может быть указателем на метод класса. В таком случае первый аргумент является классом, от которого будет вызван метод. Сам класс тоже считается аргументом
+- `include/task_scheduler/scheduler.hpp`: public scheduler API
+- `include/task_scheduler/any.hpp`: public type-erasure helper
+- `tests/scheduler_tests.cpp`: regression tests
+- `cmake/task-scheduler-config.cmake.in`: CMake package config template
 
-## Ограничения
+## Requirements
 
- Запрещено использовать стандартную библиотеку, за исключением [контейнеров](https://en.cppreference.com/w/cpp/container) и [умных указателей](https://en.cppreference.com/w/cpp/memory).
+- C++23 compiler
+- CMake 3.15 or newer if you use the provided build files
 
-## Тесты
+## Using the library
 
-Все вышеуказанный класс должен быть покрыты тестами, с помощью фреймворка [Google Test](http://google.github.io/googletest).
+This project is header-only. There is no static or shared library to build for normal use.
 
-Тесты также являются частью задания, поэтому покрытие будет влиять на максимальный балл.
+### Option 1: add the repository with CMake
 
-## NB
+```cmake
+add_subdirectory(external/task-scheduler-cpp)
 
-1. В данной работе могут быть использованы идеи [Type Erasure](https://en.wikibooks.org/wiki/More_C%2B%2B_Idioms/Type_Erasure) который мы разбирали на лекции
-2. Мы поговорили с вам про std::forward, подумайте над тем где это может быть применимо в данной задаче
-3. Получаемые расписания не всегда могут быть выполнимы, предлагается подумать что делать в таких ситуациях
+target_link_libraries(your_target PRIVATE task_scheduler::scheduler)
+```
 
-## ТеорМин
+The target only propagates include directories and compile features.
 
-1. Lambda
-2. Type erasure (какую проблему решает, как реализуется, примеры из стандартной библиотеки)
-3. Value categories
-4. RValue reference
-5. Move Semantics
+### Option 2: install and use `find_package`
 
-## Deadline
+Install:
 
-1. 23.04.25 23:59 0.8
-2. 30.04.25 23:59 0.65
-3. 07.05.25 23:59 0.5
+```bash
+cmake -S . -B build
+cmake --build build
+cmake --install build --prefix /your/prefix
+```
 
-Максимальное количество баллов - 15
+Then in another project:
+
+```cmake
+find_package(task-scheduler CONFIG REQUIRED)
+
+target_link_libraries(your_target PRIVATE task_scheduler::scheduler)
+```
+
+### Option 3: copy headers directly
+
+Add `include/` to your include path and include:
+
+```cpp
+#include <task_scheduler/scheduler.hpp>
+```
+
+## Minimal example
+
+```cpp
+#include <iostream>
+#include <task_scheduler/scheduler.hpp>
+
+auto main() -> int {
+  task_scheduler::Scheduler scheduler;
+
+  const auto base_task_id = scheduler.add([]() -> int { return 21; });
+  const auto doubled_task_id = scheduler.add(
+      [](int value) -> int { return value * 2; },
+      scheduler.getFutureResult<int>(base_task_id));
+
+  std::cout << scheduler.getResult<int>(doubled_task_id) << '\n';
+  return 0;
+}
+```
+
+## Real example
+
+```cpp
+#include <cmath>
+#include <iostream>
+#include <task_scheduler/scheduler.hpp>
+
+struct ShiftValue {
+  [[nodiscard]] auto add(float value) const -> float { return value + shift; }
+  float shift;
+};
+
+auto main() -> int {
+  constexpr float kCoefficientA = 1.0F;
+  constexpr float kCoefficientB = -2.0F;
+  constexpr float kCoefficientC = 0.0F;
+  constexpr float kNegativeFour = -4.0F;
+  constexpr float kTwo = 2.0F;
+
+  task_scheduler::Scheduler scheduler;
+  ShiftValue shift_value{.shift = 3.0F};
+
+  const auto discriminant_tail_task_id =
+      scheduler.add([](float lhs, float rhs) -> float {
+        return kNegativeFour * lhs * rhs;
+      }, kCoefficientA, kCoefficientC);
+
+  const auto discriminant_task_id = scheduler.add(
+      [](float coefficient, float value) -> float {
+        return (coefficient * coefficient) + value;
+      },
+      kCoefficientB,
+      scheduler.getFutureResult<float>(discriminant_tail_task_id));
+
+  const auto first_numerator_task_id = scheduler.add(
+      [](float coefficient, float discriminant) -> float {
+        return -coefficient + std::sqrt(discriminant);
+      },
+      kCoefficientB, scheduler.getFutureResult<float>(discriminant_task_id));
+
+  const auto second_numerator_task_id = scheduler.add(
+      [](float coefficient, float discriminant) -> float {
+        return -coefficient - std::sqrt(discriminant);
+      },
+      kCoefficientB, scheduler.getFutureResult<float>(discriminant_task_id));
+
+  const auto first_root_task_id = scheduler.add(
+      [](float coefficient, float value) -> float {
+        return value / (kTwo * coefficient);
+      },
+      kCoefficientA,
+      scheduler.getFutureResult<float>(first_numerator_task_id));
+
+  const auto second_root_task_id = scheduler.add(
+      [](float coefficient, float value) -> float {
+        return value / (kTwo * coefficient);
+      },
+      kCoefficientA,
+      scheduler.getFutureResult<float>(second_numerator_task_id));
+
+  const auto shifted_root_task_id =
+      scheduler.add(&ShiftValue::add, shift_value,
+                    scheduler.getFutureResult<float>(second_root_task_id));
+
+  scheduler.executeAll();
+
+  std::cout << "x1 = " << scheduler.getResult<float>(first_root_task_id) << '\n';
+  std::cout << "x2 = " << scheduler.getResult<float>(second_root_task_id) << '\n';
+  std::cout << "x3 = " << scheduler.getResult<float>(shifted_root_task_id) << '\n';
+  return 0;
+}
+```
+
+## API overview
+
+### `task_scheduler::Scheduler`
+
+Main scheduler type.
+
+### `add`
+
+```cpp
+const auto task_id = scheduler.add(callable, args...);
+```
+
+Adds a task and returns its numeric identifier.
+
+Supported callables:
+- lambdas;
+- free functions;
+- functors;
+- member function pointers.
+
+Arguments may be plain values or `getFutureResult<T>(other_task_id)`.
+
+### `getFutureResult<T>`
+
+```cpp
+const auto future = scheduler.getFutureResult<int>(task_id);
+```
+
+Creates a lightweight placeholder for another task result. No computation happens yet.
+
+### `getResult<T>`
+
+```cpp
+const auto value = scheduler.getResult<int>(task_id);
+```
+
+Computes only the requested task and the dependency chain required for it. Already-computed results are reused.
+
+### `executeAll`
+
+```cpp
+scheduler.executeAll();
+```
+
+Computes every registered task exactly once.
+
+### `size`
+
+```cpp
+const auto count = scheduler.size();
+```
+
+Returns the number of registered tasks.
+
+## Error behavior
+
+The library throws:
+
+- `std::out_of_range`: task id does not exist
+- `std::logic_error`: cyclic dependency detected during execution
+- `task_scheduler::Any::BadAnyCast`: stored result type does not match the requested type, or the value is empty
+
+## Production characteristics
+
+This version is suitable as a small embedded library because it is:
+- header-only;
+- deterministic;
+- lazily evaluated;
+- cached after first successful execution;
+- packaged for `add_subdirectory` and `find_package`;
+- covered by regression tests;
+- integrated with `clang-tidy` in CMake.
+
+Deliberately out of scope for now:
+- parallel execution;
+- cancellation;
+- retry policies;
+- async futures;
+- graph serialization.
+
+## Build and test this repository
+
+```bash
+cmake -S . -B build
+cmake --build build
+ctest --test-dir build --output-on-failure
+```
+
+## Install layout
+
+After installation the package provides:
+
+- headers under `<prefix>/include/task-scheduler`
+- CMake package files under `<prefix>/lib*/cmake/task-scheduler`
