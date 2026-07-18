@@ -1,4 +1,0 @@
-/home/err0r_n1ck/temp/labwork9-n1ckerr0r/build/CMakeFiles/edit_cache.dir
-/home/err0r_n1ck/temp/labwork9-n1ckerr0r/build/CMakeFiles/rebuild_cache.dir
-/home/err0r_n1ck/temp/labwork9-n1ckerr0r/build/bin/CMakeFiles/edit_cache.dir
-/home/err0r_n1ck/temp/labwork9-n1ckerr0r/build/bin/CMakeFiles/rebuild_cache.dir
