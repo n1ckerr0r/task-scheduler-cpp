@@ -249,13 +249,6 @@ This version is suitable as a small embedded library because it is:
 - covered by regression tests;
 - integrated with `clang-tidy` in CMake.
 
-Deliberately out of scope for now:
-- parallel execution;
-- cancellation;
-- retry policies;
-- async futures;
-- graph serialization.
-
 ## Build and test this repository
 
 ```bash
