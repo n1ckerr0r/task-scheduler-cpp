@@ -2,6 +2,8 @@
 
 Header-only C++23 library for building and executing small dependency graphs of tasks.
 
+> **Note:** this is a pet project, created for learning and experimentation. It is not intended for production use.
+
 The library lets you:
 - add tasks with zero, one, or two arguments;
 - reference one task result from another task;
